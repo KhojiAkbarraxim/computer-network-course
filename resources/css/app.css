@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Space Grotesk', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+    --color-brand-50: #eff6ff;
+    --color-brand-100: #dbeafe;
+    --color-brand-200: #bfdbfe;
+    --color-brand-500: #3b82f6;
+    --color-brand-600: #2563eb;
+    --color-brand-700: #1d4ed8;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        font-family: var(--font-sans);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-display);
+        letter-spacing: -0.03em;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    .container-shell {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .card-surface {
+        @apply rounded-[2rem] border border-white/80 bg-white/90 shadow-[0_20px_65px_-35px_rgba(15,23,42,0.35)] backdrop-blur-xl;
+    }
+
+    .gradient-panel {
+        background:
+            linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(255, 255, 255, 0.9) 36%),
+            linear-gradient(180deg, rgba(16, 185, 129, 0.12), transparent 50%);
+    }
+
+    .section-kicker {
+        @apply inline-flex w-fit items-center rounded-full border border-brand-100 bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700;
+    }
+}
