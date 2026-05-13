@@ -9,7 +9,7 @@ return [
         ],
         [
             "value" => "58",
-            "label" => "demo dars",
+            "label" => "namunaviy dars",
             "icon" => "🧠",
         ],
         [
@@ -19,7 +19,7 @@ return [
         ],
         [
             "value" => "100%",
-            "label" => "Uzbek tilidagi interfeys",
+            "label" => "O'zbek tilidagi interfeys",
             "icon" => "🌐",
         ],
     ],
@@ -37,7 +37,7 @@ return [
         "benefits" => [
             [
                 "title" => "Karyera uchun mustahkam poydevor",
-                "text" => "Tarmoq bilimlari system administrator, help desk, DevOps va xavfsizlik yo'nalishlariga kirish uchun zarur.",
+                "text" => "Tarmoq bilimlari tizim boshqaruvi, texnik yordam, infratuzilma boshqaruvi va xavfsizlik yo'nalishlariga kirish uchun zarur.",
                 "icon" => "🚀",
             ],
             [
@@ -68,7 +68,7 @@ return [
     ],
     "modules" => [
         [
-            "number" => "01",
+            "sort_order" => 1,
             "title" => "Kompyuter tarmoqlariga kirish",
             "description" => "Tarmoq nima, qurilmalar qanday bog'lanadi va asosiy atamalar nimalarni anglatadi.",
             "lesson_count" => 5,
@@ -77,7 +77,7 @@ return [
             "duration" => "42 daqiqa",
         ],
         [
-            "number" => "02",
+            "sort_order" => 2,
             "title" => "Tarmoq turlari: LAN, MAN, WAN",
             "description" => "Mahalliy, shahar va global tarmoq turlarini real hayotdagi misollar bilan solishtirish.",
             "lesson_count" => 4,
@@ -86,7 +86,7 @@ return [
             "duration" => "35 daqiqa",
         ],
         [
-            "number" => "03",
+            "sort_order" => 3,
             "title" => "OSI modeli",
             "description" => "7 qatlamli modelning vazifalari va ma'lumot uzatish jarayonidagi o'rni.",
             "lesson_count" => 6,
@@ -95,7 +95,7 @@ return [
             "duration" => "58 daqiqa",
         ],
         [
-            "number" => "04",
+            "sort_order" => 4,
             "title" => "TCP/IP modeli",
             "description" => "Internet ishlashining asosi bo'lgan qatlamlar, protokollar va ularning munosabati.",
             "lesson_count" => 5,
@@ -104,7 +104,7 @@ return [
             "duration" => "46 daqiqa",
         ],
         [
-            "number" => "05",
+            "sort_order" => 5,
             "title" => "IP manzillar va subnetting",
             "description" => "IPv4 tuzilishi, subnet maska va tarmoqni bo'lish tamoyillari.",
             "lesson_count" => 7,
@@ -113,7 +113,7 @@ return [
             "duration" => "1 soat 12 daqiqa",
         ],
         [
-            "number" => "06",
+            "sort_order" => 6,
             "title" => "Router, switch va hub",
             "description" => "Tarmoq qurilmalari farqlari, ishlash prinsipi va amaliy qo'llanishi.",
             "lesson_count" => 5,
@@ -122,7 +122,7 @@ return [
             "duration" => "44 daqiqa",
         ],
         [
-            "number" => "07",
+            "sort_order" => 7,
             "title" => "DNS, DHCP va NAT",
             "description" => "Nomlarni manzilga aylantirish, avtomatik IP berish va manzil tarjimasi.",
             "lesson_count" => 6,
@@ -131,7 +131,7 @@ return [
             "duration" => "52 daqiqa",
         ],
         [
-            "number" => "08",
+            "sort_order" => 8,
             "title" => "Wi-Fi va simsiz tarmoqlar",
             "description" => "Simsiz aloqa standartlari, qamrov masalalari va xavfsizlik yondashuvlari.",
             "lesson_count" => 4,
@@ -140,7 +140,7 @@ return [
             "duration" => "31 daqiqa",
         ],
         [
-            "number" => "09",
+            "sort_order" => 9,
             "title" => "Tarmoq xavfsizligi",
             "description" => "Parol siyosati, segmentatsiya, firewall va xavfsizlikning bazaviy amaliyoti.",
             "lesson_count" => 6,
@@ -149,7 +149,7 @@ return [
             "duration" => "1 soat",
         ],
         [
-            "number" => "10",
+            "sort_order" => 10,
             "title" => "Amaliy laboratoriya ishlari",
             "description" => "Nazariyani mustahkamlash uchun kichik topologiyalar, tahlil va tekshiruv mashqlari.",
             "lesson_count" => 10,
@@ -167,14 +167,14 @@ return [
         "sidebar_lessons" => [
             ["title" => "3.1 - OSI modeliga kirish", "duration" => "7 daqiqa", "active" => false],
             ["title" => "3.2 - OSI qatlamlari vazifalari", "duration" => "12 daqiqa", "active" => true],
-            ["title" => "3.3 - Encapsulation nima?", "duration" => "10 daqiqa", "active" => false],
+            ["title" => "3.3 - Qamrash nima?", "duration" => "10 daqiqa", "active" => false],
             ["title" => "3.4 - Qurilmalar va qatlamlar", "duration" => "9 daqiqa", "active" => false],
             ["title" => "3.5 - Protokollar misoli", "duration" => "8 daqiqa", "active" => false],
             ["title" => "3.6 - Mini test", "duration" => "6 daqiqa", "active" => false],
         ],
         "paragraphs" => [
             "OSI modeli tarmoqdagi ma'lumot qanday harakatlanishini 7 ta aniq qatlam orqali tushuntiradi. Har bir qatlam o'zining alohida vazifasiga ega bo'lib, ular birgalikda butun aloqa jarayonini sodda qismlarga ajratadi.",
-            "Masalan, Application qatlami foydalanuvchi ilovalariga yaqin bo'lsa, Transport qatlami paketlarning ishonchli yetib borishini nazorat qiladi. Physical qatlami esa signalning kabel yoki simsiz kanal orqali uzatilishiga javob beradi.",
+            "Masalan, ilova qatlami foydalanuvchi dasturlariga yaqin bo'lsa, transport qatlami paketlarning ishonchli yetib borishini nazorat qiladi. Jismoniy qatlam esa signalning kabel yoki simsiz kanal orqali uzatilishiga javob beradi.",
             "Bu modelni yaxshi tushunish router, switch, firewall yoki protokol xatolarini tahlil qilishda katta yordam beradi. Ayniqsa muammo qaysi qatlamda ekanini topish tezlashadi.",
         ],
         "note" => [
@@ -182,29 +182,29 @@ return [
             "text" => "OSI modeli real internetda to'liq alohida ishlaydigan qatlamlar to'plami emas. U ko'proq tushuntirish va tahlil qilish uchun qulay konseptual model sifatida ishlatiladi.",
         ],
         "diagram_layers" => [
-            ["name" => "7. Application", "hint" => "Foydalanuvchi dasturlari bilan ishlaydi"],
-            ["name" => "6. Presentation", "hint" => "Formatlash va kodlash"],
-            ["name" => "5. Session", "hint" => "Sessiyani boshqarish"],
-            ["name" => "4. Transport", "hint" => "Ishonchli yetkazish"],
-            ["name" => "3. Network", "hint" => "Marshrutlash va IP"],
-            ["name" => "2. Data Link", "hint" => "MAC va frame"],
-            ["name" => "1. Physical", "hint" => "Signal va uzatish muhiti"],
+            ["name" => "7. Ilova qatlami", "hint" => "Foydalanuvchi dasturlari bilan ishlaydi"],
+            ["name" => "6. Taqdimot qatlami", "hint" => "Formatlash va kodlash"],
+            ["name" => "5. Sessiya qatlami", "hint" => "Sessiyani boshqarish"],
+            ["name" => "4. Tashish qatlami", "hint" => "Ishonchli yetkazish"],
+            ["name" => "3. Tarmoq qatlami", "hint" => "Marshrutlash va IP"],
+            ["name" => "2. Kanal qatlami", "hint" => "MAC va freym"],
+            ["name" => "1. Jismoniy qatlam", "hint" => "Signal va uzatish muhiti"],
         ],
         "key_terms" => [
-            ["term" => "Encapsulation", "definition" => "Ma'lumot har bir qatlamdan o'tganda sarlavha qo'shilish jarayoni."],
-            ["term" => "Protocol", "definition" => "Qurilmalar o'rtasidagi aloqa qoidalari va standartlari to'plami."],
-            ["term" => "Packet", "definition" => "Tarmoq orqali uzatiladigan mantiqiy ma'lumot bo'lagi."],
-            ["term" => "Troubleshooting", "definition" => "Tarmoqdagi muammo qaysi qatlamda ekanini aniqlash va tuzatish amaliyoti."],
+            ["term" => "Qamrash", "definition" => "Ma'lumot har bir qatlamdan o'tganda sarlavha qo'shilish jarayoni."],
+            ["term" => "Protokol", "definition" => "Qurilmalar o'rtasidagi aloqa qoidalari va standartlari to'plami."],
+            ["term" => "Paket", "definition" => "Tarmoq orqali uzatiladigan mantiqiy ma'lumot bo'lagi."],
+            ["term" => "Muammoni tahlil qilish", "definition" => "Tarmoqdagi muammo qaysi qatlamda ekanini aniqlash va tuzatish amaliyoti."],
         ],
     ],
     "quiz" => [
         "title" => "TCP/IP modeli bo'yicha mini-nazorat",
-        "description" => "Quyidagi savollar kurs interfeysini ko'rsatish uchun demo holatda ishlaydi. Javoblar faqat frontend darajasida hisoblanadi.",
+        "description" => "Quyidagi savollar kurs interfeysini ko'rsatish uchun namunaviy holatda ishlaydi. Javoblar faqat brauzer darajasida hisoblanadi.",
         "questions" => [
             [
                 "id" => "q1",
                 "question" => "TCP/IP modelida paketlarni manzilga yo'naltirish asosan qaysi qatlam vazifasi?",
-                "options" => ["Application", "Internet", "Network Access", "Session"],
+                "options" => ["Ilova qatlami", "Internet qatlami", "Tarmoqqa kirish qatlami", "Sessiya qatlami"],
                 "answer" => 1,
             ],
             [
@@ -216,12 +216,12 @@ return [
             [
                 "id" => "q3",
                 "question" => "Switch odatda qaysi qatlam bilan ko'proq bog'liq deb qaraladi?",
-                "options" => ["Physical", "Data Link", "Transport", "Application"],
+                "options" => ["Jismoniy qatlam", "Kanal qatlami", "Tashish qatlami", "Ilova qatlami"],
                 "answer" => 1,
             ],
         ],
         "result" => [
-            "title" => "Demo natija kartasi",
+            "title" => "Namunaviy natija kartasi",
             "message" => "Siz asosiy tushunchalarni yaxshi yo'nalishda o'zlashtiryapsiz. Endi IP manzillash va subnetting moduliga o'tish tavsiya etiladi.",
             "highlights" => [
                 "Qatlamlar vazifasini ajrata oldingiz",
@@ -240,7 +240,7 @@ return [
         "continue" => [
             "module" => "OSI modeli",
             "lesson" => "3.2 - OSI qatlamlari vazifalari",
-            "text" => "Siz hozir aynan qatlamlar vazifasi va encapsulation mantig'ini o'rganayotgan bosqichdasiz.",
+            "text" => "Siz hozir aynan qatlamlar vazifasi va qamrash mantig'ini o'rganayotgan bosqichdasiz.",
             "progress" => 40,
         ],
         "completed_lessons" => [
@@ -271,8 +271,8 @@ return [
         ],
         "audiences" => [
             "IT sohasiga endi kirayotgan talabalar",
-            "System administrator yoki support yo'nalishiga tayyorlanayotganlar",
-            "Tarmoq asoslarini Uzbek tilida tushunmoqchi bo'lgan mustaqil o'quvchilar",
+            "Tizim boshqaruvi yoki texnik yordam yo'nalishiga tayyorlanayotganlar",
+            "Tarmoq asoslarini o'zbek tilida tushunmoqchi bo'lgan mustaqil o'quvchilar",
         ],
         "outcomes" => [
             "OSI va TCP/IP modellarini farqlay olish",

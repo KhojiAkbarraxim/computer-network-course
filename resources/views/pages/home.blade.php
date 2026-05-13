@@ -1,12 +1,7 @@
-@extends('layouts.app')
-
-@section('title', 'Bosh sahifa | Kompyuter Tarmoqlarini O\'rganish')
-
-@section('content')
-    <section class="container-shell">
+<section class="container-shell">
         <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div class="space-y-8">
-                <span class="section-kicker">Uzbek tilidagi soddalashtirilgan o'quv yo'li</span>
+                <span class="section-kicker">O'zbek tilidagi soddalashtirilgan o'quv yo'li</span>
 
                 <div class="space-y-5">
                     <h1 class="font-display text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
@@ -15,7 +10,7 @@
                         usulda o'rganing
                     </h1>
                     <p class="max-w-2xl text-lg leading-8 text-slate-600">
-                        Platforma kompyuter tarmoqlari mavzusini bosqichma-bosqich, vizual kartalar, qisqa darslar va mini-quizlar orqali o'rgatish uchun loyihalangan.
+                        Platforma kompyuter tarmoqlari mavzusini bosqichma-bosqich, vizual kartalar, qisqa darslar va qisqa nazoratlar orqali o'rgatish uchun loyihalangan.
                     </p>
                 </div>
 
@@ -61,12 +56,12 @@
                         <div class="rounded-3xl bg-slate-900 p-5 text-white shadow-2xl shadow-slate-900/15">
                             <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-300">Davom etayotgan modul</p>
                             <p class="mt-3 font-display text-2xl font-semibold">OSI modeli</p>
-                            <p class="mt-2 text-sm leading-6 text-slate-300">Qatlamlar vazifasi, encapsulation va troubleshooting uchun foydali mantiq.</p>
+                            <p class="mt-2 text-sm leading-6 text-slate-300">Qatlamlar vazifasi va muammoni tahlil qilish uchun foydali mantiq.</p>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="rounded-3xl bg-white p-5 shadow-lg shadow-brand-600/10">
-                                <p class="text-sm font-semibold text-slate-500">Mini-quizlar</p>
+                                <p class="text-sm font-semibold text-slate-500">Qisqa nazoratlar</p>
                                 <p class="mt-3 font-display text-3xl font-semibold text-slate-950">24</p>
                                 <p class="mt-2 text-sm text-slate-600">Har modul oxirida bilimni tekshirish uchun.</p>
                             </div>
@@ -120,7 +115,7 @@
             <x-section-heading
                 kicker="Nega aynan tarmoqlar?"
                 title="Har qanday zamonaviy tizim ortida tarmoq logikasi bor"
-                description="Backend, bulut, xavfsizlik yoki texnik support bo'lsin, tarmoq asoslarini bilish sizga muammolarni to'g'ri ko'rish imkonini beradi."
+                description="Server tomoni, bulut, xavfsizlik yoki texnik yordam bo'lsin, tarmoq asoslarini bilish sizga muammolarni to'g'ri ko'rish imkonini beradi."
                 inverse
             />
 
@@ -138,8 +133,8 @@
     <section class="container-shell mt-20">
         <x-section-heading
             kicker="Qisqa statistika"
-            title="Demo platforma tuzilmasi"
-            description="Interfeys hozircha statik ma'lumotlar bilan ishlaydi, ammo struktura keyingi backend bosqichiga tayyorlangan."
+            title="Namunaviy platforma tuzilmasi"
+            description="Interfeys hozircha statik ma'lumotlar bilan ishlaydi, ammo tuzilma keyingi server tomoni bosqichiga tayyorlangan."
             align="center"
         />
 
@@ -148,5 +143,4 @@
                 <x-stat-card :value="$stat['value']" :label="$stat['label']" :icon="$stat['icon']" />
             @endforeach
         </div>
-    </section>
-@endsection
+</section>

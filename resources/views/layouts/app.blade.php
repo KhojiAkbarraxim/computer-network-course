@@ -1,25 +1,26 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>@yield('title', 'Kompyuter Tarmoqlarini O\'rganish')</title>
-        <meta
-            name="description"
-            content="Kompyuter tarmoqlarini o'rganish uchun soddalashtirilgan, zamonaviy va Uzbek tilidagi o'quv platformasi demo interfeysi."
-        >
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        <title>@yield('title', "Kompyuter Tarmoqlarini O'rganish")</title>
+
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700|space+grotesk:500,600,700&display=swap" rel="stylesheet" />
+
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
-        <div class="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[32rem] bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.18),_transparent_58%)]"></div>
-        <div class="pointer-events-none fixed inset-0 -z-10 bg-[linear-gradient(to_right,rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.06)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(circle_at_center,black_30%,transparent_92%)]"></div>
+    <body class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_30%),linear-gradient(180deg,_#f8fbff_0%,_#eef4ff_45%,_#f8fafc_100%)] font-sans text-slate-900 antialiased">
+        <div class="min-h-screen">
+            @include('partials.navbar')
 
-        <x-navbar />
+            <main class="pb-20 pt-8 sm:pt-10">
+                @yield('content')
+            </main>
 
-        <main class="pb-16 pt-6 md:pt-10">
-            @yield('content')
-        </main>
-
-        <x-footer />
+            @include('partials.footer')
+        </div>
     </body>
 </html>

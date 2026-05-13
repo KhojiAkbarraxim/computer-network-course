@@ -1,14 +1,9 @@
-@extends('layouts.app')
-
-@section('title', 'Loyiha haqida | Kompyuter Tarmoqlarini O\'rganish')
-
-@section('content')
-    <section class="container-shell">
+<section class="container-shell">
         <div class="rounded-[2rem] bg-white/90 p-8 shadow-[0_28px_70px_-32px_rgba(15,23,42,0.28)] sm:p-10">
             <x-section-heading
                 kicker="Loyiha haqida"
                 title="Nima uchun bu platforma yaratilmoqda?"
-                description="{{ $about['purpose'] }}"
+                :description="$about['purpose']"
             />
 
             <div class="mt-10 grid gap-6 lg:grid-cols-3">
@@ -72,5 +67,4 @@
                 @endforeach
             </div>
         </div>
-    </section>
-@endsection
+</section>

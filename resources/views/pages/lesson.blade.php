@@ -1,9 +1,12 @@
-@extends('layouts.app')
-
-@section('title', 'Namuna dars | Kompyuter Tarmoqlarini O\'rganish')
-
-@section('content')
-    <section class="container-shell" x-data="{ sidebarOpen: window.innerWidth >= 1024 }" @resize.window="if (window.innerWidth >= 1024) sidebarOpen = true">
+<section class="container-shell" x-data="{ sidebarOpen: window.innerWidth >= 1024 }" @resize.window="if (window.innerWidth >= 1024) sidebarOpen = true">
+    @if (! $lesson)
+        <div class="card-surface rounded-[2rem] p-8 text-center">
+            <p class="font-display text-2xl font-semibold text-slate-950">Hozircha dars ma’lumotlari mavjud emas.</p>
+            <p class="mt-3 text-sm leading-6 text-slate-600">
+                Darslar bazaga qo'shilgach, ushbu sahifada to'liq dars matni va navigatsiya ko'rinadi.
+            </p>
+        </div>
+    @else
         <div class="mb-6 flex items-center justify-between gap-4 lg:hidden">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.16em] text-brand-700">{{ $lesson['module_label'] }}</p>
@@ -31,13 +34,13 @@
                     <div class="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
                         <div class="h-full rounded-full bg-gradient-to-r from-brand-600 to-emerald-500" style="width: {{ $lesson['progress'] }}%"></div>
                     </div>
-                    <p class="mt-2 text-sm text-slate-500">Modul progressi: {{ $lesson['progress'] }}%</p>
+                    <p class="mt-2 text-sm text-slate-500">Modul o'zlashtirishi: {{ $lesson['progress'] }}%</p>
                 </div>
 
                 <div class="space-y-3 p-4">
                     @foreach ($lesson['sidebar_lessons'] as $sidebarLesson)
                         <a
-                            href="#"
+                            href="{{ route('lesson.show', $sidebarLesson['id']) }}"
                             class="{{ $sidebarLesson['active'] ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-transparent bg-slate-50 text-slate-700 hover:border-slate-200 hover:bg-white' }} block rounded-2xl border px-4 py-3 transition"
                         >
                             <p class="text-sm font-semibold">{{ $sidebarLesson['title'] }}</p>
@@ -49,6 +52,10 @@
 
             <div class="space-y-8">
                 <article class="card-surface p-6 sm:p-8">
+                    @if (session('status'))
+                        <x-auth-session-status class="mb-5" :status="session('status')" />
+                    @endif
+
                     <div class="flex flex-wrap items-center gap-3">
                         <span class="rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700">{{ $lesson['module_label'] }}</span>
                         <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">{{ $lesson['duration'] }}</span>
@@ -57,6 +64,30 @@
                     <h1 class="mt-5 font-display text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
                         {{ $lesson['current_lesson'] }}
                     </h1>
+
+                    <div class="mt-5 flex flex-wrap items-center gap-3">
+                        @auth
+                            @if ($lesson['is_completed'])
+                                <span class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+                                    Bu dars tugatilgan
+                                </span>
+                            @else
+                                <form method="POST" action="{{ route('lesson.complete', $lesson['id']) }}">
+                                    @csrf
+                                    <button
+                                        type="submit"
+                                        class="inline-flex rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
+                                    >
+                                        Darsni tugatdim
+                                    </button>
+                                </form>
+                            @endif
+                        @else
+                            <p class="text-sm font-medium text-slate-500">
+                                Progressni saqlash uchun tizimga kiring
+                            </p>
+                        @endauth
+                    </div>
 
                     <div class="mt-6 space-y-5 text-base leading-8 text-slate-600">
                         @foreach ($lesson['paragraphs'] as $paragraph)
@@ -81,21 +112,29 @@
                     <div class="flex items-center justify-between gap-4">
                         <div>
                             <p class="section-kicker">Tarmoq diagramma ko'rinishi</p>
-                            <h2 class="mt-4 font-display text-2xl font-semibold text-slate-950">OSI qatlamlari qanday ketma-ket joylashadi?</h2>
+                            <h2 class="mt-4 font-display text-2xl font-semibold text-slate-950">Tarmoq tushunchalarini bosqichma-bosqich ko'rish</h2>
                         </div>
                         <span class="hidden rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:inline-flex">Vizual tushuntirish</span>
                     </div>
 
-                    <div class="mt-8 grid gap-3">
-                        @foreach ($lesson['diagram_layers'] as $layer)
-                            <div class="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-                                <div class="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-brand-600 to-emerald-500"></div>
-                                <div class="pl-5">
-                                    <p class="font-display text-xl font-semibold text-slate-950">{{ $layer['name'] }}</p>
-                                    <p class="mt-1 text-sm leading-6 text-slate-600">{{ $layer['hint'] }}</p>
-                                </div>
+                    <div class="mt-8 rounded-[2rem] border border-dashed border-slate-300 bg-slate-50 p-6">
+                        <div class="grid gap-4 md:grid-cols-3">
+                            <div class="rounded-3xl bg-white p-5 shadow-sm">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Qadam 1</p>
+                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">Manbani aniqlash</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Darsdagi tarmoq elementi, qurilma yoki xizmat qayerda ishlashini tushunib oling.</p>
                             </div>
-                        @endforeach
+                            <div class="rounded-3xl bg-white p-5 shadow-sm">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Qadam 2</p>
+                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">Aloqa oqimini ko'rish</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Ma'lumot qanday uzatilishini, qaysi bosqichlarda qayta ishlanishini ko'z oldingizga keltiring.</p>
+                            </div>
+                            <div class="rounded-3xl bg-white p-5 shadow-sm">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">Qadam 3</p>
+                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">Muammoni tahlil qilish</p>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Agar uzilish bo'lsa, qaysi qismda sabab bo'lishi mumkinligini shu blok orqali baholang.</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -117,20 +156,39 @@
                 </section>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                    <a
-                        href="{{ route('course') }}"
-                        class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
-                    >
-                        Oldingi modulga qaytish
-                    </a>
-                    <a
-                        href="{{ route('quiz.sample') }}"
-                        class="inline-flex items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
-                    >
-                        Keyingi: mini-quiz
-                    </a>
+                    @if ($lesson['previous'])
+                        <a
+                            href="{{ $lesson['previous']['url'] }}"
+                            class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
+                        >
+                            Oldingi: {{ $lesson['previous']['title'] }}
+                        </a>
+                    @else
+                        <a
+                            href="{{ route('course') }}"
+                            class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
+                        >
+                            Kurs modullariga qaytish
+                        </a>
+                    @endif
+
+                    @if ($lesson['next'])
+                        <a
+                            href="{{ $lesson['next']['url'] }}"
+                            class="inline-flex items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
+                        >
+                            Keyingi: {{ $lesson['next']['title'] }}
+                        </a>
+                    @else
+                        <a
+                            href="{{ route('quiz.sample') }}"
+                            class="inline-flex items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
+                        >
+                            Keyingi: qisqa nazorat
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
-    </section>
-@endsection
+    @endif
+</section>

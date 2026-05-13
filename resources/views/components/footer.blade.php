@@ -8,11 +8,11 @@
                     </div>
                     <div>
                         <p class="font-display text-lg font-semibold text-slate-900">Kompyuter Tarmoqlarini O'rganish</p>
-                        <p class="text-sm text-slate-500">Statik demo ko'rinish, Laravel Blade va Tailwind asosida.</p>
+                        <p class="text-sm text-slate-500">Statik namunaviy ko'rinish, soddalashtirilgan o'quv interfeysi asosida.</p>
                     </div>
                 </div>
                 <p class="max-w-xl text-sm leading-6 text-slate-600">
-                    Ushbu loyiha kompyuter tarmoqlari mavzusini Uzbek tilida sodda, tushunarli va amaliy fikrlashga yaqin usulda o'rgatishga mo'ljallangan.
+                    Ushbu loyiha kompyuter tarmoqlari mavzusini o'zbek tilida sodda, tushunarli va amaliy fikrlashga yaqin usulda o'rgatishga mo'ljallangan.
                 </p>
             </div>
 
@@ -30,15 +30,15 @@
                 <p class="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">Yo'nalish</p>
                 <div class="mt-4 space-y-3 text-sm text-slate-600">
                     <p>Nazariya + vizual tushuntirish</p>
-                    <p>Modulma-modul progress</p>
+                    <p>Modulma-modul o'zlashtirish</p>
                     <p>Nazorat va amaliy laboratoriya mantig'i</p>
                 </div>
             </div>
         </div>
 
         <div class="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-            <p>&copy; {{ now()->year }} Kompyuter Tarmoqlarini O'rganish. Demo ko'rinish.</p>
-            <p>Keyingi bosqich: backend, foydalanuvchi progressi va real quiz logikasi.</p>
+            <p>&copy; {{ now()->year }} Kompyuter Tarmoqlarini O'rganish. Namunaviy ko'rinish.</p>
+            <p>Keyingi bosqich: server tomoni, foydalanuvchi o'zlashtirishi va haqiqiy nazorat logikasi.</p>
         </div>
     </div>
 </footer>
