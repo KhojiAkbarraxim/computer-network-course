@@ -1,4 +1,18 @@
-<section class="container-shell" x-data="{ sidebarOpen: window.innerWidth >= 1024 }" @resize.window="if (window.innerWidth >= 1024) sidebarOpen = true">
+<section
+    class="container-shell"
+    x-data="{
+        sidebarOpen: window.innerWidth >= 1024,
+        visualOpen: false,
+        toggleVisual() {
+            this.visualOpen = !this.visualOpen;
+
+            if (this.visualOpen) {
+                this.$nextTick(() => document.getElementById('vizual-tushuntirish')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+            }
+        },
+    }"
+    @resize.window="if (window.innerWidth >= 1024) sidebarOpen = true"
+>
     @if (! $lesson)
         <div class="card-surface rounded-[2rem] p-8 text-center">
             <p class="font-display text-2xl font-semibold text-slate-950">Hozircha dars ma’lumotlari mavjud emas.</p>
@@ -87,6 +101,14 @@
                                 Progressni saqlash uchun tizimga kiring
                             </p>
                         @endauth
+
+                        <button
+                            type="button"
+                            class="inline-flex rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
+                            @click="toggleVisual()"
+                        >
+                            Vizual tushuntirish
+                        </button>
                     </div>
 
                     <div class="mt-6 space-y-5 text-base leading-8 text-slate-600">
@@ -108,34 +130,87 @@
                     </div>
                 </article>
 
-                <section class="card-surface overflow-hidden p-6 sm:p-8">
+                <section
+                    id="vizual-tushuntirish"
+                    class="card-surface overflow-hidden p-6 sm:p-8"
+                    x-cloak
+                    x-show="visualOpen"
+                    x-transition
+                >
                     <div class="flex items-center justify-between gap-4">
                         <div>
-                            <p class="section-kicker">Tarmoq diagramma ko'rinishi</p>
-                            <h2 class="mt-4 font-display text-2xl font-semibold text-slate-950">Tarmoq tushunchalarini bosqichma-bosqich ko'rish</h2>
+                            <p class="section-kicker">Vizual tushuntirish</p>
+                            <h2 class="mt-4 font-display text-2xl font-semibold text-slate-950">
+                                {{ $lesson['visual']['title'] }}
+                            </h2>
+                            @if ($lesson['visual']['description'])
+                                <p class="mt-3 text-sm leading-7 text-slate-600">{{ $lesson['visual']['description'] }}</p>
+                            @endif
                         </div>
-                        <span class="hidden rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:inline-flex">Vizual tushuntirish</span>
+                        <button
+                            type="button"
+                            class="hidden rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white sm:inline-flex"
+                            @click="visualOpen = false"
+                        >
+                            Yopish
+                        </button>
                     </div>
 
-                    <div class="mt-8 rounded-[2rem] border border-dashed border-slate-300 bg-slate-50 p-6">
-                        <div class="grid gap-4 md:grid-cols-3">
-                            <div class="rounded-3xl bg-white p-5 shadow-sm">
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Qadam 1</p>
-                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">Manbani aniqlash</p>
-                                <p class="mt-2 text-sm leading-6 text-slate-600">Darsdagi tarmoq elementi, qurilma yoki xizmat qayerda ishlashini tushunib oling.</p>
+                    @if ($lesson['visual']['has_data'])
+                        <div class="mt-8 grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+                            <div>
+                                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">Bosqichma-bosqich ko'rish</p>
+
+                                @if ($lesson['visual']['steps'])
+                                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                                        @foreach ($lesson['visual']['steps'] as $index => $step)
+                                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Qadam {{ $index + 1 }}</p>
+                                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">{{ $step }}</p>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="mt-5 rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-500">
+                                        Bu dars uchun vizual tushuntirish hali qo'shilmagan.
+                                    </div>
+                                @endif
                             </div>
-                            <div class="rounded-3xl bg-white p-5 shadow-sm">
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Qadam 2</p>
-                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">Aloqa oqimini ko'rish</p>
-                                <p class="mt-2 text-sm leading-6 text-slate-600">Ma'lumot qanday uzatilishini, qaysi bosqichlarda qayta ishlanishini ko'z oldingizga keltiring.</p>
-                            </div>
-                            <div class="rounded-3xl bg-white p-5 shadow-sm">
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">Qadam 3</p>
-                                <p class="mt-3 font-display text-xl font-semibold text-slate-950">Muammoni tahlil qilish</p>
-                                <p class="mt-2 text-sm leading-6 text-slate-600">Agar uzilish bo'lsa, qaysi qismda sabab bo'lishi mumkinligini shu blok orqali baholang.</p>
+
+                            <div>
+                                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-brand-700">Diagramma ko'rinishi</p>
+                                <div class="mt-5 rounded-[2rem] border border-dashed border-slate-300 bg-slate-50 p-6">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Asosiy jarayon</p>
+
+                                    @if ($lesson['visual']['diagram']['layout'] === 'stacked')
+                                        <div class="mt-5 space-y-3">
+                                            @foreach ($lesson['visual']['diagram']['nodes'] as $node)
+                                                <div class="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-900 shadow-sm">
+                                                    {{ $node }}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="mt-5 flex flex-col gap-3">
+                                            @foreach ($lesson['visual']['diagram']['nodes'] as $node)
+                                                <div class="rounded-3xl border border-slate-200 bg-white px-5 py-4 text-center text-sm font-semibold text-slate-900 shadow-sm">
+                                                    {{ $node }}
+                                                </div>
+
+                                                @if (! $loop->last)
+                                                    <div class="text-center text-lg font-semibold text-brand-700">↓</div>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @else
+                        <div class="mt-8 rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-500">
+                            Bu dars uchun vizual tushuntirish hali qo'shilmagan.
+                        </div>
+                    @endif
                 </section>
 
                 <section class="card-surface p-6 sm:p-8">
@@ -181,10 +256,10 @@
                         </a>
                     @else
                         <a
-                            href="{{ route('quiz.sample') }}"
+                            href="{{ route('quizzes.index') }}"
                             class="inline-flex items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
                         >
-                            Keyingi: qisqa nazorat
+                            Keyingi: nazoratlar
                         </a>
                     @endif
                 </div>

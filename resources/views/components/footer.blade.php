@@ -21,8 +21,8 @@
                 <div class="mt-4 space-y-3 text-sm text-slate-600">
                     <a class="block transition hover:text-brand-700" href="{{ route('home') }}">Bosh sahifa</a>
                     <a class="block transition hover:text-brand-700" href="{{ route('course') }}">Kurs modullari</a>
-                    <a class="block transition hover:text-brand-700" href="{{ route('lesson.sample') }}">Namuna dars</a>
-                    <a class="block transition hover:text-brand-700" href="{{ route('quiz.sample') }}">Namuna nazorat</a>
+                    <a class="block transition hover:text-brand-700" href="{{ route('lessons.index') }}">Darslar</a>
+                    <a class="block transition hover:text-brand-700" href="{{ route('quizzes.index') }}">Nazoratlar</a>
                 </div>
             </div>
 

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Lesson;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
@@ -12,15 +15,32 @@ use Illuminate\View\View;
 class QuizController extends Controller
 {
     /**
+     * Display all published quizzes.
+     */
+    public function index(): View
+    {
+        $quizzes = $this->applyCurriculumOrder($this->publishedQuizQuery())
+            ->with([
+                'lesson.module',
+            ])
+            ->withCount('questions')
+            ->get();
+
+        return $this->renderQuizListPage($quizzes);
+    }
+
+    /**
      * Display the first available quiz.
      */
-    public function showSample(Request $request): View
+    public function showSample(): RedirectResponse|View
     {
-        $quiz = $this->quizQuery()
-            ->orderBy('id')
-            ->first();
+        $quiz = $this->applyCurriculumOrder($this->publishedQuizQuery())->first();
 
-        return $this->renderQuizPage($quiz, $request);
+        if ($quiz !== null) {
+            return redirect()->route('quiz.show', $quiz);
+        }
+
+        return $this->renderQuizListPage(collect());
     }
 
     /**
@@ -28,11 +48,24 @@ class QuizController extends Controller
      */
     public function show(Request $request, string $quiz): View
     {
-        $quizModel = $this->quizQuery()
+        $quizModel = $this->detailQuizQuery()
             ->whereKey($quiz)
             ->first();
 
         return $this->renderQuizPage($quizModel, $request);
+    }
+
+    /**
+     * Build the quiz listing page payload.
+     *
+     * @param Collection<int, Quiz> $quizzes
+     */
+    protected function renderQuizListPage(Collection $quizzes): View
+    {
+        return view('quizzes', [
+            'pageTitle' => 'Nazoratlar',
+            'quizzes' => $quizzes,
+        ]);
     }
 
     /**
@@ -42,7 +75,7 @@ class QuizController extends Controller
     {
         if ($quizModel === null) {
             return view('quiz-sample', [
-                'pageTitle' => 'Namuna nazorat',
+                'pageTitle' => 'Nazorat',
                 'quiz' => null,
             ]);
         }
@@ -122,17 +155,46 @@ class QuizController extends Controller
     /**
      * Base query for published quizzes.
      */
-    protected function quizQuery()
+    protected function publishedQuizQuery(): Builder
     {
         return Quiz::query()
             ->where('is_published', true)
+            ->whereHas('lesson', fn ($query) => $query
+                ->where('is_published', true)
+                ->whereHas('module', fn ($moduleQuery) => $moduleQuery->where('is_published', true)));
+    }
+
+    /**
+     * Base query for public quiz detail pages.
+     */
+    protected function detailQuizQuery(): Builder
+    {
+        return $this->publishedQuizQuery()
             ->with([
-                'lesson' => fn ($query) => $query
-                    ->where('is_published', true)
-                    ->with([
-                        'module' => fn ($moduleQuery) => $moduleQuery->where('is_published', true),
-                    ]),
+                'lesson.module',
                 'questions.answers',
             ]);
+    }
+
+    /**
+     * Order quizzes by module and lesson position in the course.
+     */
+    protected function applyCurriculumOrder(Builder $query): Builder
+    {
+        return $query
+            ->orderBy(
+                Lesson::query()
+                    ->join('modules', 'modules.id', '=', 'lessons.module_id')
+                    ->select('modules.sort_order')
+                    ->whereColumn('lessons.id', 'quizzes.lesson_id')
+                    ->limit(1)
+            )
+            ->orderBy(
+                Lesson::query()
+                    ->select('sort_order')
+                    ->whereColumn('lessons.id', 'quizzes.lesson_id')
+                    ->limit(1)
+            )
+            ->orderBy('quizzes.id');
     }
 }

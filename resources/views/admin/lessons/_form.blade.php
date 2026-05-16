@@ -56,6 +56,48 @@
     </div>
 
     <div>
+        <x-input-label for="visual_title" value="Vizual sarlavha" />
+        <x-text-input id="visual_title" name="visual_title" type="text" class="mt-1" :value="old('visual_title', $lesson->visual_title)" />
+        <x-input-error class="mt-2" :messages="$errors->get('visual_title')" />
+    </div>
+
+    <div>
+        <x-input-label for="diagram_type" value="Diagramma turi" />
+        <select id="diagram_type" name="diagram_type" class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-100">
+            <option value="">Diagramma turini tanlang</option>
+            @foreach ([
+                'basic-network' => 'Asosiy tarmoq',
+                'network-types' => 'Tarmoq turlari',
+                'osi' => 'OSI modeli',
+                'tcp-ip' => 'TCP/IP modeli',
+                'ip-subnet' => 'IP va subnet',
+                'devices' => 'Qurilmalar',
+                'dns-dhcp-nat' => 'DNS, DHCP va NAT',
+                'wifi' => 'Wi-Fi',
+                'security' => 'Xavfsizlik',
+                'lab' => 'Laboratoriya',
+                'default' => 'Oddiy sxema',
+            ] as $value => $label)
+                <option value="{{ $value }}" @selected(old('diagram_type', $lesson->diagram_type) === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+        <x-input-error class="mt-2" :messages="$errors->get('diagram_type')" />
+    </div>
+
+    <div class="md:col-span-2">
+        <x-input-label for="visual_description" value="Vizual tavsif" />
+        <textarea id="visual_description" name="visual_description" rows="4" class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-100">{{ old('visual_description', $lesson->visual_description) }}</textarea>
+        <x-input-error class="mt-2" :messages="$errors->get('visual_description')" />
+    </div>
+
+    <div class="md:col-span-2">
+        <x-input-label for="visual_steps_text" value="Vizual bosqichlar" />
+        <textarea id="visual_steps_text" name="visual_steps_text" rows="5" class="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-brand-300 focus:ring-2 focus:ring-brand-100" placeholder="Manbani aniqlash&#10;Aloqa oqimini ko'rish&#10;Muammoni tahlil qilish">{{ old('visual_steps_text', $visualStepsText) }}</textarea>
+        <p class="mt-2 text-xs text-slate-500">Har bir bosqichni alohida satrga yozing.</p>
+        <x-input-error class="mt-2" :messages="$errors->get('visual_steps_text')" />
+    </div>
+
+    <div>
         <x-input-label for="duration_minutes" value="Davomiylik (daqiqada)" />
         <x-text-input id="duration_minutes" name="duration_minutes" type="number" min="1" class="mt-1" :value="old('duration_minutes', $lesson->duration_minutes)" />
         <x-input-error class="mt-2" :messages="$errors->get('duration_minutes')" />

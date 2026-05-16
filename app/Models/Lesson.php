@@ -24,6 +24,10 @@ class Lesson extends Model
         'important_note_title',
         'important_note_text',
         'key_terms',
+        'visual_title',
+        'visual_description',
+        'visual_steps',
+        'diagram_type',
         'duration_minutes',
         'is_published',
     ];
@@ -62,6 +66,7 @@ class Lesson extends Model
         return [
             'sort_order' => 'integer',
             'key_terms' => 'array',
+            'visual_steps' => 'array',
             'duration_minutes' => 'integer',
             'is_published' => 'boolean',
         ];

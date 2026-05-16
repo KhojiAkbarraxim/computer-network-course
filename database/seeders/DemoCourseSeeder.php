@@ -34,7 +34,6 @@ class DemoCourseSeeder extends Seeder
         );
 
         $lessonBlueprints = $this->lessonBlueprints($demoCourse);
-        $quizLesson = null;
 
         foreach (Arr::get($demoCourse, 'modules', []) as $moduleIndex => $moduleData) {
             $moduleSortOrder = (int) $moduleData['sort_order'];
@@ -60,7 +59,7 @@ class DemoCourseSeeder extends Seeder
                         'module_id' => $module->id,
                         'sort_order' => $lessonIndex + 1,
                     ],
-                    [
+                    array_merge([
                         'title' => $lessonData['title'],
                         'slug' => Str::slug($lessonData['title']),
                         'short_description' => $lessonData['short_description'],
@@ -68,20 +67,32 @@ class DemoCourseSeeder extends Seeder
                         'important_note_title' => $lessonData['important_note_title'] ?? 'Muhim eslatma',
                         'important_note_text' => $lessonData['important_note_text'] ?? null,
                         'key_terms' => $lessonData['key_terms'] ?? [],
+                        'visual_title' => $lessonData['visual_title'] ?? null,
+                        'visual_description' => $lessonData['visual_description'] ?? null,
+                        'visual_steps' => $lessonData['visual_steps'] ?? null,
+                        'diagram_type' => $lessonData['diagram_type'] ?? null,
                         'duration_minutes' => $lessonData['duration_minutes'],
                         'is_published' => true,
-                    ],
+                    ], $this->visualDataForLesson($lessonData['title'], $moduleData['title'])),
                 );
-
-                if ($moduleSortOrder === 1 && ($lessonIndex + 1) === 1) {
-                    $quizLesson = $lesson;
-                }
             }
         }
 
-        if ($quizLesson !== null) {
-            $this->seedQuizForLesson($quizLesson, $this->quizData());
-        }
+        Lesson::query()
+            ->select('lessons.*')
+            ->join('modules', 'modules.id', '=', 'lessons.module_id')
+            ->with([
+                'module' => fn ($query) => $query->with([
+                    'lessons' => fn ($lessonQuery) => $lessonQuery
+                        ->orderBy('sort_order')
+                        ->orderBy('id'),
+                ]),
+            ])
+            ->orderBy('modules.sort_order')
+            ->orderBy('lessons.sort_order')
+            ->orderBy('lessons.id')
+            ->get()
+            ->each(fn (Lesson $lesson) => $this->seedQuizForLesson($lesson));
     }
 
     /**
@@ -287,7 +298,7 @@ class DemoCourseSeeder extends Seeder
         $lessons = [];
 
         foreach ($titles as $index => $title) {
-            $lessons[] = [
+            $lessons[] = array_merge([
                 'title' => $title,
                 'short_description' => $moduleDescription ?: "{$moduleTitle} bo'yicha asosiy mavzularni tushuntiradi.",
                 'content' => "{$moduleTitle} modulidagi {$title} darsida mavzuning amaliy ahamiyati, asosiy atamalari va real tarmoqdagi qo'llanishi qisqa va tushunarli usulda yoritiladi.\n\nDars davomida asosiy tushuncha, oddiy misol va amaliy qarash birgalikda beriladi, shuning uchun boshlovchi foydalanuvchi mavzuni bosqichma-bosqich o'zlashtira oladi.",
@@ -295,19 +306,18 @@ class DemoCourseSeeder extends Seeder
                 'important_note_text' => "{$title} mavzusini mustahkamlash uchun darsdagi asosiy atamalarni qayta ko'rib chiqish tavsiya etiladi.",
                 'key_terms' => $this->defaultKeyTerms($moduleTitle),
                 'duration_minutes' => 8 + ($index % 4),
-            ];
+            ], $this->visualDataForLesson($title, $moduleTitle));
         }
 
         return $lessons;
     }
 
     /**
-     * Seed a sample quiz for the provided lesson.
-     *
-     * @param array<string, mixed> $quizConfig
+     * Seed a quiz for the provided lesson.
      */
-    protected function seedQuizForLesson(Lesson $lesson, array $quizConfig): void
+    protected function seedQuizForLesson(Lesson $lesson): void
     {
+        $quizConfig = $this->quizDataForLesson($lesson);
         $quiz = Quiz::query()->updateOrCreate(
             ['lesson_id' => $lesson->id],
             [
@@ -318,6 +328,8 @@ class DemoCourseSeeder extends Seeder
             ],
         );
 
+        $questionIds = [];
+
         foreach (Arr::get($quizConfig, 'questions', []) as $questionIndex => $questionData) {
             $question = QuizQuestion::query()->updateOrCreate(
                 [
@@ -327,12 +339,15 @@ class DemoCourseSeeder extends Seeder
                 [
                     'question_type' => 'single_choice',
                     'question_text' => $questionData['question'],
-                    'explanation' => "Ushbu savol {$quiz->title} ichidagi asosiy tushunchani tekshiradi.",
+                    'explanation' => $questionData['explanation'],
                 ],
             );
 
+            $questionIds[] = $question->id;
+            $answerIds = [];
+
             foreach ($questionData['options'] as $answerIndex => $option) {
-                QuizAnswer::query()->updateOrCreate(
+                $answer = QuizAnswer::query()->updateOrCreate(
                     [
                         'quiz_question_id' => $question->id,
                         'sort_order' => $answerIndex + 1,
@@ -342,63 +357,428 @@ class DemoCourseSeeder extends Seeder
                         'is_correct' => $answerIndex === (int) $questionData['answer'],
                     ],
                 );
+
+                $answerIds[] = $answer->id;
             }
+
+            QuizAnswer::query()
+                ->where('quiz_question_id', $question->id)
+                ->whereNotIn('id', $answerIds)
+                ->delete();
         }
+
+        QuizQuestion::query()
+            ->where('quiz_id', $quiz->id)
+            ->whereNotIn('id', $questionIds)
+            ->delete();
     }
 
     /**
-     * Quiz data for the first lesson.
+     * Build lesson specific quiz data.
      *
      * @return array<string, mixed>
      */
-    protected function quizData(): array
+    protected function quizDataForLesson(Lesson $lesson): array
     {
+        $topic = $this->lessonTopic($lesson->title);
+        $profile = $this->quizProfileForLesson($lesson->title, $lesson->module?->title ?? 'Kompyuter tarmoqlari');
+
         return [
-            'title' => "Kompyuter tarmog'i bo'yicha qisqa nazorat",
-            'description' => "Ushbu nazorat birinchi darsdagi asosiy tushunchalarni mustahkamlash uchun tuzilgan.",
+            'title' => "{$lesson->title} bo'yicha nazorat",
+            'description' => "\"{$topic}\" darsidagi asosiy tushunchalarni mustahkamlash uchun qisqa nazorat.",
             'questions' => [
-                [
-                    'question' => "Kompyuter tarmog'ining asosiy vazifasi nima?",
-                    'options' => [
-                        "Faqat bitta qurilmani tezlashtirish",
-                        "Qurilmalar o'rtasida ma'lumot almashish",
-                        "Faqat internetga chiqish",
-                        "Faqat printer ulash",
-                    ],
-                    'answer' => 1,
-                ],
-                [
-                    'question' => "Tarmoq orqali odatda nimalarni ulash mumkin?",
-                    'options' => [
-                        "Faqat monitorlarni",
-                        "Faqat klaviaturalarni",
-                        "Kompyuterlar, serverlar va umumiy resurslarni",
-                        "Faqat telefonlarni",
-                    ],
-                    'answer' => 2,
-                ],
-                [
-                    'question' => "Mijoz-server modelida serverning roli qanday?",
-                    'options' => [
-                        "Xizmat va resurslarni taqdim etadi",
-                        "Faqat foydalanuvchi sifatida ishlaydi",
-                        "Tarmoq kabelini almashtiradi",
-                        "Faqat faylni o'chiradi",
-                    ],
-                    'answer' => 0,
-                ],
-                [
-                    'question' => "Tarmoq bo'lmasa umumiy fayl almashish qanday bo'ladi?",
-                    'options' => [
-                        "Ancha qulay va markazlashgan bo'ladi",
-                        "Hech qanday farq bo'lmaydi",
-                        "Ko'proq qo'lda va noqulay usullarga bog'lanib qoladi",
-                        "Avtomatik ravishda tezlashadi",
-                    ],
-                    'answer' => 2,
-                ],
+                $this->buildQuizQuestion(
+                    "\"{$topic}\" mavzusida asosiy tushuncha qaysi javobda to'g'ri berilgan?",
+                    $profile['concept'],
+                    $this->contextualDistractorsForLesson($lesson, 'concept', $profile['concept']),
+                    1,
+                    "{$topic} mavzusida eslab qolish kerak bo'lgan asosiy fikr shu javobda berilgan.",
+                ),
+                $this->buildQuizQuestion(
+                    "\"{$topic}\" bo'yicha amaliy holatda qaysi misol mos keladi?",
+                    $profile['example'],
+                    $this->contextualDistractorsForLesson($lesson, 'example', $profile['example']),
+                    2,
+                    "{$topic} mavzusini amaliyotda ko'rish uchun shu misol eng mos keladi.",
+                ),
+                $this->buildQuizQuestion(
+                    "\"{$topic}\" bilan ishlaganda nimaga e'tibor berish kerak?",
+                    $profile['attention'],
+                    $this->contextualDistractorsForLesson($lesson, 'attention', $profile['attention']),
+                    0,
+                    "{$topic} bo'yicha to'g'ri yondashuv shu javobda ko'rsatilgan.",
+                ),
             ],
         ];
+    }
+
+    /**
+     * Build a quiz question with one correct answer.
+     *
+     * @param list<string> $distractors
+     * @return array<string, mixed>
+     */
+    protected function buildQuizQuestion(string $question, string $correctAnswer, array $distractors, int $correctIndex, string $explanation): array
+    {
+        $options = array_values(array_slice($distractors, 0, 3));
+        array_splice($options, $correctIndex, 0, [$correctAnswer]);
+
+        return [
+            'question' => $question,
+            'options' => $options,
+            'answer' => $correctIndex,
+            'explanation' => $explanation,
+        ];
+    }
+
+    /**
+     * Normalize lesson title for quiz text.
+     */
+    protected function lessonTopic(string $lessonTitle): string
+    {
+        return trim((string) preg_replace('/^\d+\.\d+\s*-\s*/u', '', $lessonTitle));
+    }
+
+    /**
+     * Build a topic profile for each lesson.
+     *
+     * @return array{concept: string, example: string, attention: string}
+     */
+    protected function quizProfileForLesson(string $lessonTitle, string $moduleTitle): array
+    {
+        $normalizedLesson = mb_strtolower($lessonTitle);
+        $normalizedModule = mb_strtolower($moduleTitle);
+        $topic = $this->lessonTopic($lessonTitle);
+
+        return match (true) {
+            str_contains($normalizedLesson, "kompyuter tarmog'i nima") => [
+                'concept' => "Kompyuter tarmog'i qurilmalar o'rtasida ma'lumot almashish va resurslardan birga foydalanish uchun xizmat qiladi.",
+                'example' => "Bir ofisdagi kompyuterlar va printerlarni bitta tarmoq orqali ulash.",
+                'attention' => "Qaysi qurilmalar tarmoqqa ulanganini va ma'lumot oqimi qayerdan qayerga borishini tushunish kerak.",
+            ],
+            str_contains($normalizedLesson, 'tarmoq nima uchun kerak') => [
+                'concept' => "Tarmoq fayl, internet va umumiy qurilmalardan birgalikda foydalanishni qulaylashtiradi.",
+                'example' => "Sinfdagi bir nechta kompyuterning bitta printerdan foydalanishi.",
+                'attention' => "Tarmoqning foydasi tezkor almashish va markazlashgan boshqaruvda ekanini eslab qolish kerak.",
+            ],
+            str_contains($normalizedLesson, 'mijoz va server') => [
+                'concept' => "Mijoz so'rov yuboradi, server esa xizmat yoki resursni taqdim etadi.",
+                'example' => "Brauzer veb-serverdan sahifa so'rashi.",
+                'attention' => "Xizmatni so'rayotgan qurilma va xizmatni berayotgan qurilmani adashtirmaslik kerak.",
+            ],
+            str_contains($normalizedLesson, 'topologiya') || str_contains($normalizedLesson, 'ulanish ko\'rinishlari') => [
+                'concept' => "Topologiya tarmoq qurilmalarining qanday tartibda ulanganini ko'rsatadi.",
+                'example' => "Yulduzsimon topologiyada barcha kompyuterlarni switch markaziga ulash.",
+                'attention' => "Topologiya tanlashda kabel yo'li va keyin kengaytirish qulayligini hisobga olish kerak.",
+            ],
+            str_contains($normalizedLesson, 'lan tarmog') => [
+                'concept' => "LAN kichik hududdagi qurilmalarni tezkor va mahalliy tarzda ulaydi.",
+                'example' => "Bitta ofis yoki kompyuter sinfidagi qurilmalarni bir tarmoqqa ulash.",
+                'attention' => "LAN odatda kichik joy va yaqin joylashgan qurilmalar uchun ishlatilishini esda tutish kerak.",
+            ],
+            str_contains($normalizedLesson, 'man tarmog') => [
+                'concept' => "MAN bir shahar yoki yirik kampus bo'ylab joylashgan tarmoqlarni bog'laydi.",
+                'example' => "Shaharning turli nuqtalaridagi universitet binolarini ulash.",
+                'attention' => "MAN LANdan kattaroq, lekin WANdan torroq qamrovga ega ekanini ajratish kerak.",
+            ],
+            str_contains($normalizedLesson, 'wan tarmog') => [
+                'concept' => "WAN uzoq hududlardagi tarmoqlarni bir-biriga ulash uchun xizmat qiladi.",
+                'example' => "Bir necha shahardagi filiallarni bitta kompaniya tarmog'iga bog'lash.",
+                'attention' => "WAN katta masofada ishlashi va internet kabi keng tarmoqlarga yaqin ekanini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'tanlash mezonlari') => [
+                'concept' => "Tarmoq turini tanlashda qamrov hududi, foydalanuvchilar soni va xarajat hisobga olinadi.",
+                'example' => "Kichik ofis uchun LAN, bir nechta filial uchun esa WAN tanlash.",
+                'attention' => "Tarmoq turini faqat nomiga emas, vazifasi va qamroviga qarab tanlash kerak.",
+            ],
+            str_contains($normalizedLesson, 'osi modeli haqida') => [
+                'concept' => "OSI modeli tarmoq aloqasini yetti qatlamga bo'lib tushunishga yordam beradi.",
+                'example' => "Muammoni qaysi qatlamda ekanini bosqichma-bosqich tekshirish.",
+                'attention' => "OSI modeli amaliy protokollarning nusxasi emas, tushunish uchun model ekanini unutmaslik kerak.",
+            ],
+            str_contains($normalizedLesson, '7 qatlam') => [
+                'concept' => "OSI modelidagi yetti qatlam vazifalarni alohida bosqichlarga ajratadi.",
+                'example' => "Ilova qatlami dasturga, fizik qatlam esa kabel va signalga yaqin ishlashi.",
+                'attention' => "Qatlamlar ketma-ketligi va har birining o'z roli borligini yodda tutish kerak.",
+            ],
+            str_contains($normalizedLesson, 'har bir qatlam vazifasi') => [
+                'concept' => "Har bir qatlam tarmoqda alohida vazifani bajaradi va bir-birini to'ldiradi.",
+                'example' => "Transport qatlami uzatishni nazorat qilsa, tarmoq qatlami manzillashni boshqaradi.",
+                'attention' => "Bitta vazifani noto'g'ri qatlamga bog'lab yubormaslik kerak.",
+            ],
+            str_contains($normalizedLesson, 'qurilmalar va qatlamlar') => [
+                'concept' => "Tarmoq qurilmalari ma'lum qatlam vazifalariga yaqin ishlaydi.",
+                'example' => "Switch kanal qatlamiga, router esa tarmoq qatlamiga yaqin ishlashi.",
+                'attention' => "Qurilmaning asosiy vazifasini tegishli qatlam bilan bog'lash kerak.",
+            ],
+            str_contains($normalizedLesson, 'protokollar misoli') => [
+                'concept' => "HTTP, TCP, IP va Ethernet kabi protokollar turli qatlamlarda ishlaydi.",
+                'example' => "HTTP ilova qatlamida, IP esa tarmoq qatlamida ishlashini ko'rsatish.",
+                'attention' => "Protokol nomini eshitganda uni qaysi qatlamga yaqin ekanini ham eslash kerak.",
+            ],
+            str_contains($normalizedLesson, 'tcp/ip modeliga kirish') => [
+                'concept' => "TCP/IP modeli internetda ko'p ishlatiladigan qatlamli tarmoq modelidir.",
+                'example' => "Ilovadan chiqqan ma'lumot TCP/IP qatlamlari orqali internetga uzatilishi.",
+                'attention' => "TCP/IP modelida qatlamlar soni OSI modelidan kamroq ekanini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'qatlamlar va protokollar') && str_contains($normalizedModule, 'tcp/ip') => [
+                'concept' => "TCP/IP modelida protokollar qatlamlar bo'yicha guruhlanadi va birga ishlaydi.",
+                'example' => "TCP transport qatlamida, IP esa internet qatlamida ishlashi.",
+                'attention' => "Protokol va qatlam o'rtasidagi bog'lanishni tushunish kerak.",
+            ],
+            str_contains($normalizedLesson, 'paketlar oqimi') => [
+                'concept' => "Ma'lumot tarmoq bo'ylab qatlamlar orqali paket ko'rinishida harakatlanadi.",
+                'example' => "Foydalanuvchi xabari kapsulalanib tarmoqqa uzatilishi va qarshi tomonda ochilishi.",
+                'attention' => "Paket oqimi bosqichma-bosqich sodir bo'lishini tasavvur qila olish kerak.",
+            ],
+            str_contains($normalizedLesson, 'tcp va ip vazifalari') => [
+                'concept' => "TCP ishonchli uzatishni, IP esa manzillash va yo'naltirishni bajaradi.",
+                'example' => "TCP paketlar tartibini nazorat qilsa, IP ularni kerakli manzilga olib boradi.",
+                'attention' => "TCP va IP vazifalarini bir-biri bilan almashtirib yubormaslik kerak.",
+            ],
+            str_contains($normalizedLesson, 'ipv4 manzil tuzilishi') => [
+                'concept' => "IPv4 manzili to'rtta oktetdan tashkil topgan 32 bitli manzildir.",
+                'example' => "192.168.1.10 ko'rinishidagi manzilni o'qish.",
+                'attention' => "IPv4 manzilida nuqta bilan ajratilgan qismlar borligini esda tutish kerak.",
+            ],
+            str_contains($normalizedLesson, 'tarmoq va host qismi') => [
+                'concept' => "IP manzilning bir qismi tarmoqni, boshqa qismi esa qurilmani bildiradi.",
+                'example' => "Bir subnet ichida bir xil tarmoq qismi, turli host qismlaridan foydalanish.",
+                'attention' => "Tarmoq qismi va host qismini subnet maska orqali ajratish kerak.",
+            ],
+            str_contains($normalizedLesson, 'subnet maska') => [
+                'concept' => "Subnet maska IP manzilda qaysi bitlar tarmoqqa tegishli ekanini ko'rsatadi.",
+                'example' => "255.255.255.0 maskasi bilan /24 tarmoqni aniqlash.",
+                'attention' => "Maska noto'g'ri bo'lsa qurilmalar bir-birini topolmasligini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'cidr yozuvi') => [
+                'concept' => "CIDR yozuvi subnetni qisqa ko'rinishda, masalan /24 shaklida ifodalaydi.",
+                'example' => "192.168.10.0/24 tarmog'ini yozish.",
+                'attention' => "Slashdan keyingi son tarmoq bitlari sonini bildiradi.",
+            ],
+            str_contains($normalizedLesson, 'subnet hisoblash') => [
+                'concept' => "Subnet hisoblash orqali nechta host va nechta tarmoq bo'lishini topish mumkin.",
+                'example' => "Kichik ofis uchun nechta qurilma sig'ishini oldindan hisoblash.",
+                'attention' => "Hisoblashda foydalaniladigan host bitlari sonini to'g'ri aniqlash kerak.",
+            ],
+            str_contains($normalizedLesson, 'manzillash xatolarini topish') => [
+                'concept' => "Manzillash xatolari noto'g'ri IP, maska yoki shlyuz sabab yuz beradi.",
+                'example' => "Bir subnetdagi ikki qurilmaga turli maska berib qo'yilganini topish.",
+                'attention' => "IP, subnet maska va default gateway ni birga tekshirish kerak.",
+            ],
+            str_contains($normalizedLesson, 'hub qanday ishlaydi') => [
+                'concept' => "Hub kelgan signalni barcha portlarga bir xil uzatadi.",
+                'example' => "Bitta portga kelgan trafikning barcha ulangan qurilmalarga tarqalishi.",
+                'attention' => "Hub aqlli tanlamaydi, trafikni hammaga uzatishini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'switchning vazifasi') => [
+                'concept' => "Switch MAC manzilga qarab trafikni kerakli portga yo'naltiradi.",
+                'example' => "Bitta kompyuterdan chiqqan kadrni faqat kerakli printer portiga yuborish.",
+                'attention' => "Switch hubdan farqli ravishda barcha portlarga emas, kerakli portga ishlashini tushunish kerak.",
+            ],
+            str_contains($normalizedLesson, 'router nima qiladi') => [
+                'concept' => "Router turli tarmoqlar orasida paketlarni yo'naltiradi.",
+                'example' => "Mahalliy ofis tarmog'idan internetga chiqishni boshqarish.",
+                'attention' => "Router bir tarmoq ichidagi emas, turli tarmoqlar orasidagi harakatni boshqaradi.",
+            ],
+            str_contains($normalizedLesson, 'qurilmalarni taqqoslash') => [
+                'concept' => "Hub, switch va router turli vazifani bajaradi va bir-birini to'liq almashtirmaydi.",
+                'example' => "Kichik ofisda switch ichki ulanishni, router esa internetga chiqishni boshqarishi.",
+                'attention' => "Qurilma tanlashda uning vazifasini aniq bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'kichik topologiya misoli') => [
+                'concept' => "Kichik topologiyada qurilmalar bir-biri bilan mantiqiy va qulay tartibda ulanadi.",
+                'example' => "Kompyuterlar switchga, switch esa routerga ulanishi.",
+                'attention' => "Ulanish zanjirini chizib ko'rish amaliy tushunishni kuchaytiradi.",
+            ],
+            str_contains($normalizedLesson, 'dns xizmatining roli') => [
+                'concept' => "DNS domen nomlarini IP manzillarga o'giradi.",
+                'example' => "Brauzerga sayt nomi yozilganda unga mos IP topilishi.",
+                'attention' => "DNS nomni eslab qolishni osonlashtiradi, lekin real aloqa IP bilan bo'lishini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'dhcp orqali ip taqsimlash') => [
+                'concept' => "DHCP qurilmalarga IP va boshqa tarmoq sozlamalarini avtomatik beradi.",
+                'example' => "Noutbuk Wi-Fi ga ulanganda avtomatik IP manzil olishi.",
+                'attention' => "DHCP ishlamasa qurilma kerakli tarmoq sozlamalarini olmasligini tekshirish kerak.",
+            ],
+            str_contains($normalizedLesson, 'nat nima uchun kerak') => [
+                'concept' => "NAT ichki xususiy manzillarni tashqi tarmoqda ishlashga moslashtiradi.",
+                'example' => "Bir nechta ofis kompyuterining bitta tashqi IP orqali internetga chiqishi.",
+                'attention' => "NAT ichki va tashqi tarmoq o'rtasidagi manzil almashtirishini bajarishini tushunish kerak.",
+            ],
+            str_contains($normalizedLesson, 'xizmatlar birgalikda qanday ishlaydi') => [
+                'concept' => "DNS, DHCP va NAT birgalikda ishlaganda foydalanuvchi tarmoqqa qulay ulanadi.",
+                'example' => "Qurilma IP ni DHCP dan olib, sayt nomini DNS orqali yechib, NAT orqali internetga chiqishi.",
+                'attention' => "Bu xizmatlar bir-birini to'ldirishini bosqichma-bosqich ko'rish kerak.",
+            ],
+            str_contains($normalizedLesson, 'oddiy sozlash ssenariysi') => [
+                'concept' => "Oddiy sozlashda xizmatlar kerakli ketma-ketlikda yoqilib va tekshirib chiqiladi.",
+                'example' => "Avval IP taqsimlash, keyin DNS tekshiruvi, so'ng internet chiqishini sinash.",
+                'attention' => "Sozlash jarayonida har bir xizmatni alohida tekshirish foydali.",
+            ],
+            str_contains($normalizedLesson, 'simsiz tarmoq asoslari') => [
+                'concept' => "Simsiz tarmoq kabelsiz, radio to'lqinlar orqali aloqa o'rnatadi.",
+                'example' => "Noutbukning Wi-Fi orqali access point ga ulanishi.",
+                'attention' => "Simsiz tarmoqda qamrov va signal sifati kabelga qaraganda muhimroq ekanini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'standartlar va chastotalar') => [
+                'concept' => "Wi-Fi standartlari va chastotalar tezlik hamda qamrovga ta'sir qiladi.",
+                'example' => "2.4 GHz kengroq qamrov, 5 GHz esa ko'proq tezlik berishi.",
+                'attention' => "Chastota tanlashda faqat tezlikka emas, to'siq va masofaga ham qarash kerak.",
+            ],
+            str_contains($normalizedLesson, 'qamrov va signal sifati') => [
+                'concept' => "Signal sifati masofa, devor va shovqin sabab o'zgaradi.",
+                'example' => "Routerdan uzoq xonada signalning pasayib ketishi.",
+                'attention' => "Qamrovni baholaganda access point joylashuvi va to'siqlarni ko'rish kerak.",
+            ],
+            str_contains($normalizedLesson, 'wi-fi xavfsizligi') => [
+                'concept' => "Wi-Fi xavfsizligi kuchli parol va zamonaviy himoya rejimlariga tayanadi.",
+                'example' => "Uy tarmog'ida WPA2 yoki WPA3 va kuchli paroldan foydalanish.",
+                'attention' => "Oddiy va qisqa parollar simsiz tarmoqni oson zaiflashtirishi mumkin.",
+            ],
+            str_contains($normalizedLesson, 'xavfsizlikning asosiy tamoyillari') => [
+                'concept' => "Tarmoq xavfsizligi maxfiylik, yaxlitlik va mavjudlik tamoyillariga tayanadi.",
+                'example' => "Muhim faylni faqat ruxsatli foydalanuvchi ko'ra olishi va o'zgartira olishi.",
+                'attention' => "Xavfsizlik faqat parol emas, bir nechta tamoyil va choralarni o'z ichiga oladi.",
+            ],
+            str_contains($normalizedLesson, 'kuchli parol siyosati') => [
+                'concept' => "Kuchli parol uzun, murakkab va boshqa tizimlarda takrorlanmaydi.",
+                'example' => "Har bir xizmat uchun alohida va uzun parol ishlatish.",
+                'attention' => "Faqat bitta kuchli parolni hamma joyda qayta ishlatish xavfli ekanini bilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'segmentatsiya va ajratish') => [
+                'concept' => "Segmentatsiya tarmoqni kichik bo'limlarga ajratib xavfsizlik va boshqaruvni yaxshilaydi.",
+                'example' => "Mehmonlar Wi-Fi sini ichki ofis tarmog'idan alohida VLAN ga ajratish.",
+                'attention' => "Hamma qurilmalarni bitta tekis tarmoqqa qo'yish har doim ham xavfsiz emas.",
+            ],
+            str_contains($normalizedLesson, 'firewall vazifasi') => [
+                'concept' => "Firewall kiruvchi va chiquvchi trafikni qoidalar asosida nazorat qiladi.",
+                'example' => "Keraksiz portlarni yopib, faqat kerakli xizmatlarga ruxsat berish.",
+                'attention' => "Firewall hamma narsani avtomatik hal qilmaydi, qoidalari to'g'ri sozlanishi kerak.",
+            ],
+            str_contains($normalizedLesson, 'oddiy tahdid ssenariylari') => [
+                'concept' => "Oddiy tahdidlar noto'g'ri havola, zaif parol yoki shubhali trafik orqali kelishi mumkin.",
+                'example' => "Foydalanuvchining fishing xatdagi havolani bosib yuborishi.",
+                'attention' => "Tahdidlarni erta ko'rish uchun foydalanuvchi xatti-harakati va tizim belgilariga e'tibor berish kerak.",
+            ],
+            str_contains($normalizedLesson, 'himoya choralarini mustahkamlash') => [
+                'concept' => "Himoyani kuchaytirish uchun yangilash, zaxira nusxa va qo'shimcha tekshiruvlar kerak bo'ladi.",
+                'example' => "Tizimni yangilab, zaxira nusxa olib va ikki bosqichli tasdiqlashni yoqish.",
+                'attention' => "Bitta himoya chorasi yetarli emas, bir nechta qatlamli himoya ishlatish kerak.",
+            ],
+            str_contains($normalizedLesson, 'kichik ofis tarmog') => [
+                'concept' => "Kichik ofis tarmog'ida qurilmalar va xizmatlar sodda, lekin tartibli reja asosida ulanadi.",
+                'example' => "Kompyuterlar, printer va routerdan iborat ofis tarmog'ini chizish.",
+                'attention' => "Avval qurilmalar ro'yxati va ulanish maqsadini aniqlab olish kerak.",
+            ],
+            str_contains($normalizedLesson, 'kabel va ulanishlarni tekshirish') => [
+                'concept' => "Kabel va portlarni tekshirish tarmoq muammosini topishdagi birinchi amaliy qadamdir.",
+                'example' => "Ulanmagan kabel yoki o'chgan port indikatori sabab aloqa yo'qligini aniqlash.",
+                'attention' => "Murakkab sozlamalardan oldin fizik ulanishni tekshirish kerak.",
+            ],
+            str_contains($normalizedLesson, 'ip rejalashtirish mashqi') => [
+                'concept' => "IP rejalashtirish qurilmalarga mantiqiy va takrorlanmaydigan manzil berishni ta'minlaydi.",
+                'example' => "Ofis bo'limlari uchun alohida subnet ajratish.",
+                'attention' => "Qurilmalar soni va kelajakdagi kengayishni hisobga olib reja qilish kerak.",
+            ],
+            str_contains($normalizedLesson, 'switch portlarini tahlil qilish') => [
+                'concept' => "Switch portlarini tahlil qilish orqali qaysi qurilma qayerga ulanganini aniqlash mumkin.",
+                'example' => "Port holati va faol MAC manzillarni tekshirish.",
+                'attention' => "Port ishlamayapti degan xulosadan oldin uning holati va ulanishini ko'rish kerak.",
+            ],
+            str_contains($normalizedLesson, 'router yo\'naltirish tekshiruvi') => [
+                'concept' => "Router yo'naltirishini tekshirish paketning to'g'ri tarmoqqa ketayotganini ko'rsatadi.",
+                'example' => "Default route yoki mahalliy marshrutlar to'g'ri yozilganini ko'rish.",
+                'attention' => "Gateway va marshrut yozuvlarini birgalikda tekshirish muhim.",
+            ],
+            str_contains($normalizedLesson, 'dns muammosini aniqlash') => [
+                'concept' => "DNS muammosida nom yechilmaydi, lekin IP bilan aloqa ba'zan ishlashi mumkin.",
+                'example' => "Sayt nomi ochilmayapti, lekin uning IP manziliga ping javob berishi.",
+                'attention' => "DNS muammosini internet umuman yo'q degan holatdan ajratish kerak.",
+            ],
+            str_contains($normalizedLesson, 'dhcp xizmatini kuzatish') => [
+                'concept' => "DHCP jarayonini kuzatish qurilma qachon va qanday sozlama olayotganini tushunishga yordam beradi.",
+                'example' => "Yangi noutbuk tarmoqqa ulanganda avtomatik IP olish jarayonini ko'rish.",
+                'attention' => "IP berilmasa DHCP server va ulanish holatini birga tekshirish kerak.",
+            ],
+            str_contains($normalizedLesson, 'wi-fi qamrovini baholash') => [
+                'concept' => "Wi-Fi qamrovini baholash access point joylashuvi va signal kuchini tekshirishdir.",
+                'example' => "Ofisning turli nuqtalarida signalni solishtirish.",
+                'attention' => "Qamrovni faqat router yonida emas, foydalanuvchi ishlaydigan joylarda ham tekshirish kerak.",
+            ],
+            str_contains($normalizedLesson, 'xavfsizlik nazorat ro\'yxati') => [
+                'concept' => "Xavfsizlik nazorat ro'yxati asosiy himoya choralarini muntazam tekshirib turishga yordam beradi.",
+                'example' => "Parol, yangilanish va zaxira nusxani bitta ro'yxat bo'yicha tekshirish.",
+                'attention' => "Nazorat ro'yxatidan foydalanish unutib yuboriladigan mayda xatolarni kamaytiradi.",
+            ],
+            str_contains($normalizedLesson, 'yakuniy laboratoriya mashqi') => [
+                'concept' => "Yakuniy laboratoriya mashqi avvalgi darslarda o'rganilgan tushunchalarni bir joyda qo'llashni talab qiladi.",
+                'example' => "Topologiya, IP reja, DNS va xavfsizlikni bir ssenariy ichida tekshirish.",
+                'attention' => "Yakuniy topshiriqda muammoni bosqichma-bosqich tekshirish eng to'g'ri yondashuv bo'ladi.",
+            ],
+            str_contains($normalizedLesson, 'mini test') || str_contains($normalizedLesson, 'nazorat') => [
+                'concept' => "{$moduleTitle} bo'yicha asosiy tushunchalarni qisqa savollar orqali mustahkamlash.",
+                'example' => "Moduldagi bir nechta tarmoq atamasini amaliy vaziyat bilan bog'lash.",
+                'attention' => "Nazoratdan oldin asosiy atamalar va misollarni qayta ko'rib chiqish kerak.",
+            ],
+            str_contains($normalizedLesson, 'amaliy mashq') || str_contains($normalizedLesson, 'mashqlar') => [
+                'concept' => "{$moduleTitle} mavzusini amaliy topshiriq orqali mustahkamlash.",
+                'example' => "Nazariy tushunchani oddiy tarmoq ssenariysida qo'llab ko'rish.",
+                'attention' => "Amaliy mashqda natijaga emas, bajarilgan bosqichlarning mantiqiga ham e'tibor berish kerak.",
+            ],
+            default => [
+                'concept' => "{$topic} mavzusi {$moduleTitle} bo'yicha asosiy tarmoq tushunchasini sodda tarzda tushuntiradi.",
+                'example' => "{$topic} bilan bog'liq oddiy tarmoq holatini amaliy ko'rib chiqish.",
+                'attention' => "{$topic} mavzusida asosiy atamalar va jarayon ketma-ketligini eslab qolish kerak.",
+            ],
+        };
+    }
+
+    /**
+     * Use sibling lesson profiles to build topic-relevant distractors.
+     *
+     * @return list<string>
+     */
+    protected function contextualDistractorsForLesson(Lesson $lesson, string $field, string $correctAnswer): array
+    {
+        $moduleTitle = $lesson->module?->title ?? 'Kompyuter tarmoqlari';
+
+        $distractors = collect($lesson->module?->lessons ?? [])
+            ->filter(fn (Lesson $candidate) => $candidate->id !== $lesson->id)
+            ->map(function (Lesson $candidate) use ($moduleTitle, $field): string {
+                $profile = $this->quizProfileForLesson($candidate->title, $moduleTitle);
+
+                return trim((string) ($profile[$field] ?? ''));
+            })
+            ->filter(fn (string $text) => $text !== '' && $text !== $correctAnswer)
+            ->unique()
+            ->take(3)
+            ->values()
+            ->all();
+
+        if (count($distractors) === 3) {
+            return $distractors;
+        }
+
+        $fallback = match ($field) {
+            'concept' => [
+                "Bu tushuncha tarmoqdagi boshqa xizmatning vazifasi bilan adashib ketadi.",
+                "Bu tushuncha ma'lumot uzatish jarayonini emas, tasodifiy tashqi belgini tasvirlaydi.",
+                "Bu tushuncha mavzuning asosiy vazifasini to'liq ifodalamaydi.",
+            ],
+            'example' => [
+                "Faqat bitta qurilmaning nomini o'zgartirish bilan cheklanish.",
+                "Tarmoqsiz holatda ish stoli ko'rinishini almashtirish.",
+                "Jarayonni tekshirmasdan faqat qurilmani o'chirib-yoqish.",
+            ],
+            default => [
+                "Muammoni bosqichma-bosqich tekshirmasdan taxmin qilish.",
+                "Asosiy atamalarni bir-biriga aralashtirib yuborish.",
+                "Jarayon natijasini ko'rmasdan oldin xulosa qilish.",
+            ],
+        };
+
+        return array_values(array_slice(array_unique(array_merge($distractors, $fallback)), 0, 3));
     }
 
     /**
@@ -454,5 +834,135 @@ class DemoCourseSeeder extends Seeder
                 'definition' => "Nazariyani real tarmoq holatiga bog'lab tushuntiruvchi oddiy ssenariy.",
             ],
         ];
+    }
+
+    /**
+     * Build visual explanation data for every lesson.
+     *
+     * @return array<string, mixed>
+     */
+    protected function visualDataForLesson(string $lessonTitle, string $moduleTitle): array
+    {
+        $topic = $this->lessonTopic($lessonTitle);
+        $diagramType = $this->diagramTypeForLesson($lessonTitle, $moduleTitle);
+
+        return [
+            'visual_title' => "{$lessonTitle} uchun vizual tushuntirish",
+            'visual_description' => $this->visualDescriptionForLesson($topic, $diagramType),
+            'visual_steps' => $this->visualStepsForLesson($topic, $diagramType),
+            'diagram_type' => $diagramType,
+        ];
+    }
+
+    /**
+     * Resolve diagram type from module and lesson context.
+     */
+    protected function diagramTypeForLesson(string $lessonTitle, string $moduleTitle): string
+    {
+        $normalizedLesson = mb_strtolower($lessonTitle);
+        $normalizedModule = mb_strtolower($moduleTitle);
+
+        return match (true) {
+            str_contains($normalizedModule, 'kompyuter tarmoqlariga kirish') => 'basic-network',
+            str_contains($normalizedModule, 'tarmoq turlari') => 'network-types',
+            str_contains($normalizedModule, 'osi') => 'osi',
+            str_contains($normalizedModule, 'tcp/ip') => 'tcp-ip',
+            str_contains($normalizedModule, 'subnet') || str_contains($normalizedModule, 'ip manzil') => 'ip-subnet',
+            str_contains($normalizedModule, 'router, switch va hub') || str_contains($normalizedLesson, 'switch') || str_contains($normalizedLesson, 'router') || str_contains($normalizedLesson, 'hub') => 'devices',
+            str_contains($normalizedModule, 'dns, dhcp va nat') => 'dns-dhcp-nat',
+            str_contains($normalizedModule, 'wi-fi') || str_contains($normalizedModule, 'simsiz') => 'wifi',
+            str_contains($normalizedModule, 'xavfsizlik') => 'security',
+            str_contains($normalizedModule, 'laboratoriya') => 'lab',
+            default => 'default',
+        };
+    }
+
+    /**
+     * Build a short visual description for the lesson page.
+     */
+    protected function visualDescriptionForLesson(string $topic, string $diagramType): string
+    {
+        return match ($diagramType) {
+            'basic-network' => "\"{$topic}\" mavzusida qurilmalar qanday ulanib, ma'lumot qaysi yo'l bilan harakatlanishini sodda ko'rinishda kuzatasiz.",
+            'network-types' => "\"{$topic}\" mavzusida tarmoq qamrovi kichik hududdan yirik hududgacha qanday kengayishini ko'rasiz.",
+            'osi' => "\"{$topic}\" mavzusida qatlamlar tartibi va har bir qatlam nimaga xizmat qilishini vizual ravishda ko'rasiz.",
+            'tcp-ip' => "\"{$topic}\" mavzusida ma'lumot TCP/IP bosqichlari orqali qanday o'tishini oddiy oqim bilan tushunasiz.",
+            'ip-subnet' => "\"{$topic}\" mavzusida IP manzil, subnet maska va tarmoq qismlari qanday ajralishini ko'rasiz.",
+            'devices' => "\"{$topic}\" mavzusida qurilmalar o'rtasidagi vazifa farqini ketma-ket sxema orqali ko'rasiz.",
+            'dns-dhcp-nat' => "\"{$topic}\" mavzusida DNS, DHCP va NAT xizmatlari bir-birini qanday to'ldirishini ko'rasiz.",
+            'wifi' => "\"{$topic}\" mavzusida qurilmaning Wi-Fi router orqali internetga chiqish jarayonini ko'rasiz.",
+            'security' => "\"{$topic}\" mavzusida foydalanuvchi so'rovi himoya qatlamlaridan qanday o'tishini ko'rasiz.",
+            'lab' => "\"{$topic}\" mavzusida amaliy topshiriqni bajarish bosqichlari va tekshirish tartibini ko'rasiz.",
+            default => "\"{$topic}\" mavzusida asosiy tushuncha, jarayon va natija o'rtasidagi bog'lanishni ko'rasiz.",
+        };
+    }
+
+    /**
+     * Build visual steps for the lesson page.
+     *
+     * @return list<string>
+     */
+    protected function visualStepsForLesson(string $topic, string $diagramType): array
+    {
+        return match ($diagramType) {
+            'basic-network' => [
+                "{$topic} dagi asosiy qurilmalarni aniqlash",
+                "Kompyuterdan tarmoqqa chiqish yo'lini ko'rish",
+                "Switch va router vazifasini ajratib olish",
+                "Natijada internet yoki xizmatga ulanishni mustahkamlash",
+            ],
+            'network-types' => [
+                "{$topic} uchun qamrov hududini aniqlash",
+                'LAN, MAN va WAN o\'rtasidagi farqni ko\'rish',
+                'Qaysi holatda qaysi tarmoq turi tanlanishini mustahkamlash',
+            ],
+            'osi' => [
+                "{$topic} bo'yicha qatlam nomlarini tartiblash",
+                'Har bir qatlamning vazifasini alohida ko\'rish',
+                'Protokol yoki qurilmani mos qatlamga bog\'lash',
+                'Muammoni qaysi qatlamda izlashni eslab qolish',
+            ],
+            'tcp-ip' => [
+                "{$topic} bo'yicha ilovadan boshlangan ma'lumotni kuzatish",
+                'Transport va internet qatlamlarining vazifasini ko\'rish',
+                'Tarmoqqa kirish bosqichida uzatish qanday tugashini mustahkamlash',
+            ],
+            'ip-subnet' => [
+                "{$topic} dagi IP manzil yozuvini ko'rish",
+                'Subnet maska nimani ajratishini aniqlash',
+                'Tarmoq qismi va host qismini alohida ko\'rish',
+                'Natijani oddiy misolda tekshirish',
+            ],
+            'devices' => [
+                "{$topic} bilan bog'liq qurilma nomlarini aniqlash",
+                'Hub, switch va router vazifalarini solishtirish',
+                'Qaysi qurilma qaysi vazifada foydali ekanini mustahkamlash',
+            ],
+            'dns-dhcp-nat' => [
+                "{$topic} bo'yicha xizmatlar ketma-ketligini ko'rish",
+                'DNS, DHCP va NAT roli qayerda boshlanishini aniqlash',
+                'Xizmatlar birgalikda foydalanuvchiga qanday qulaylik yaratishini mustahkamlash',
+            ],
+            'wifi' => [
+                "{$topic} uchun qurilmaning ulanish nuqtasini ko'rish",
+                'Wi-Fi router orqali signal qanday uzatilishini kuzatish',
+                'Qamrov yoki xavfsizlikka ta\'sir qiluvchi omillarni mustahkamlash',
+            ],
+            'security' => [
+                "{$topic} bo'yicha foydalanuvchi so'rovini kuzatish",
+                'Firewall yoki himoya qatlami qayerda ishlashini aniqlash',
+                "Xavfsiz trafik ichki tarmoqqa qanday o'tishini mustahkamlash",
+            ],
+            'lab' => [
+                "{$topic} uchun topshiriq shartini aniqlash",
+                'Kerakli buyruq yoki tekshiruv bosqichini tanlash',
+                'Natijani tekshirish va xulosa chiqarishni mustahkamlash',
+            ],
+            default => [
+                'Asosiy tushunchani aniqlash',
+                'Jarayon qanday ishlashini ko\'rish',
+                'Amaliy misol bilan mustahkamlash',
+            ],
+        };
     }
 }

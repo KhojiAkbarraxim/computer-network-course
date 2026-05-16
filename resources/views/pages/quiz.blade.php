@@ -13,10 +13,16 @@
 <section class="container-shell">
     @if (! $quiz)
         <div class="card-surface rounded-[2rem] p-8 text-center">
-            <p class="font-display text-2xl font-semibold text-slate-950">Hozircha nazorat savollari mavjud emas.</p>
+            <p class="font-display text-2xl font-semibold text-slate-950">Hozircha nazoratlar mavjud emas.</p>
             <p class="mt-3 text-sm leading-6 text-slate-600">
                 Nazorat ma'lumotlari bazaga qo'shilgach, ushbu sahifada savollar va variantlar avtomatik ko'rsatiladi.
             </p>
+            <a
+                href="{{ route('quizzes.index') }}"
+                class="mt-6 inline-flex items-center justify-center rounded-full bg-brand-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-600/25 transition hover:bg-brand-700"
+            >
+                Nazoratlar ro'yxatiga o'tish
+            </a>
         </div>
     @else
         <div
@@ -38,7 +44,7 @@
             }"
         >
             <aside class="card-surface h-fit p-6 lg:sticky lg:top-28">
-                <span class="section-kicker">Namuna nazorat</span>
+                <span class="section-kicker">Nazorat</span>
                 <h1 class="mt-5 font-display text-3xl font-semibold tracking-tight text-slate-950">{{ $quiz['title'] }}</h1>
                 <p class="mt-4 text-sm leading-7 text-slate-600">{{ $quiz['description'] }}</p>
 

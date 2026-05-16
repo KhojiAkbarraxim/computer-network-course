@@ -22,10 +22,10 @@
                         Kurs modullarini ko'rish
                     </a>
                     <a
-                        href="{{ route('lesson.sample') }}"
+                        href="{{ route('lessons.index') }}"
                         class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
                     >
-                        Namuna darsni ochish
+                        Darslarni ko'rish
                     </a>
                 </div>
 

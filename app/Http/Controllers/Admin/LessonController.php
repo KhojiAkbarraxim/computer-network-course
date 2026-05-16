@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Lesson;
 use App\Models\Module;
-use Illuminate\Http\RedirectResponse;
+use App\Models\Lesson;
+use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\View\View;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 
 class LessonController extends Controller
 {
@@ -36,6 +36,7 @@ class LessonController extends Controller
             'modules' => Module::query()->with('course')->orderBy('course_id')->orderBy('sort_order')->get(),
             'keyTermsText' => '',
             'importantNote' => '',
+            'visualStepsText' => '',
         ]);
     }
 
@@ -63,6 +64,7 @@ class LessonController extends Controller
             'modules' => Module::query()->with('course')->orderBy('course_id')->orderBy('sort_order')->get(),
             'keyTermsText' => $this->formatKeyTerms($lesson->key_terms),
             'importantNote' => $lesson->important_note_text,
+            'visualStepsText' => $this->formatVisualSteps($lesson->visual_steps),
         ]);
     }
 
@@ -123,6 +125,22 @@ class LessonController extends Controller
             'content' => ['nullable', 'string'],
             'important_note' => ['nullable', 'string'],
             'key_terms_text' => ['nullable', 'string'],
+            'visual_title' => ['nullable', 'string', 'max:255'],
+            'visual_description' => ['nullable', 'string'],
+            'diagram_type' => ['nullable', 'string', Rule::in([
+                'basic-network',
+                'network-types',
+                'osi',
+                'tcp-ip',
+                'ip-subnet',
+                'devices',
+                'dns-dhcp-nat',
+                'wifi',
+                'security',
+                'lab',
+                'default',
+            ])],
+            'visual_steps_text' => ['nullable', 'string'],
             'duration_minutes' => ['nullable', 'integer', 'min:1'],
             'is_published' => ['nullable', 'boolean'],
         ]);
@@ -137,6 +155,10 @@ class LessonController extends Controller
             'important_note_title' => filled($validated['important_note'] ?? null) ? 'Muhim eslatma' : null,
             'important_note_text' => $validated['important_note'] ?? null,
             'key_terms' => $this->parseKeyTerms($validated['key_terms_text'] ?? null),
+            'visual_title' => $validated['visual_title'] ?? null,
+            'visual_description' => $validated['visual_description'] ?? null,
+            'visual_steps' => $this->parseVisualSteps($validated['visual_steps_text'] ?? null),
+            'diagram_type' => $validated['diagram_type'] ?? null,
             'duration_minutes' => $validated['duration_minutes'] ?? null,
             'is_published' => $request->boolean('is_published'),
         ];
@@ -185,6 +207,35 @@ class LessonController extends Controller
         return collect($items)
             ->filter(fn ($item) => is_array($item))
             ->map(fn (array $item) => trim(($item['term'] ?? '').' | '.($item['definition'] ?? '')))
+            ->filter()
+            ->implode("\n");
+    }
+
+    /**
+     * Convert textarea input into a simple list of visual steps.
+     *
+     * @return list<string>
+     */
+    protected function parseVisualSteps(?string $raw): array
+    {
+        return array_values(array_filter(array_map(function (string $line): ?string {
+            $line = trim($line);
+
+            return $line !== '' ? $line : null;
+        }, preg_split('/\r\n|\r|\n/', (string) $raw) ?: [])));
+    }
+
+    /**
+     * Format stored visual steps for textarea editing.
+     *
+     * @param mixed $steps
+     */
+    protected function formatVisualSteps(mixed $steps): string
+    {
+        $items = is_array($steps) ? $steps : [];
+
+        return collect($items)
+            ->map(fn ($item) => trim((string) $item))
             ->filter()
             ->implode("\n");
     }

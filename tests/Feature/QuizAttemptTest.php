@@ -26,6 +26,9 @@ class QuizAttemptTest extends TestCase
         $quiz = $this->publishedQuiz();
 
         $this->get(route('quiz.sample'))
+            ->assertRedirect(route('quiz.show', $quiz));
+
+        $this->get(route('quiz.show', $quiz))
             ->assertOk()
             ->assertSee("Natijani saqlash uchun tizimga kiring.");
 

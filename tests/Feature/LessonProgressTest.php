@@ -83,6 +83,33 @@ class LessonProgressTest extends TestCase
             ->assertSee('Bu dars tugatilgan');
     }
 
+    public function test_seeded_lesson_shows_visual_explanation_content_and_fallback_text_for_missing_visuals(): void
+    {
+        $lessonWithVisual = Lesson::query()
+            ->where('title', 'like', "%Kompyuter tarmog'i nima?%")
+            ->firstOrFail();
+        $lessonWithoutVisual = Lesson::query()
+            ->whereNull('visual_title')
+            ->whereNull('visual_description')
+            ->whereNull('visual_steps')
+            ->whereNull('diagram_type')
+            ->firstOrFail();
+
+        $this->get(route('lesson.show', $lessonWithVisual))
+            ->assertOk()
+            ->assertSeeText('Vizual tushuntirish')
+            ->assertSeeText("Bosqichma-bosqich ko'rish")
+            ->assertSeeText("Diagramma ko'rinishi")
+            ->assertSeeText('Kompyuter')
+            ->assertSeeText('Switch')
+            ->assertSeeText('Router')
+            ->assertSeeText('Internet');
+
+        $this->get(route('lesson.show', $lessonWithoutVisual))
+            ->assertOk()
+            ->assertSeeText("Bu dars uchun vizual tushuntirish hali qo'shilmagan.");
+    }
+
     public function test_dashboard_uses_real_progress_counts_and_continue_lesson(): void
     {
         $user = User::factory()->create();

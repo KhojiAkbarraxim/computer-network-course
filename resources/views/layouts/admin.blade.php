@@ -35,6 +35,12 @@
                             <a href="{{ route('admin.lessons.index') }}" class="{{ request()->routeIs('admin.lessons.*') ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-700' }} block rounded-2xl border px-4 py-3 text-sm font-semibold transition">
                                 Darslar
                             </a>
+                            <a href="{{ route('admin.quizzes.index') }}" class="{{ request()->routeIs('admin.quizzes.*') || request()->routeIs('admin.questions.*') || request()->routeIs('admin.answers.*') ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-700' }} block rounded-2xl border px-4 py-3 text-sm font-semibold transition">
+                                Nazoratlar
+                            </a>
+                            <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'border-brand-200 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white text-slate-700' }} block rounded-2xl border px-4 py-3 text-sm font-semibold transition">
+                                Foydalanuvchilar
+                            </a>
                         </div>
 
                         <div class="mt-8 rounded-3xl bg-slate-50 p-5">
@@ -60,6 +66,12 @@
                         @if (session('status'))
                             <div class="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
                                 {{ session('status') }}
+                            </div>
+                        @endif
+
+                        @if (session('error'))
+                            <div class="rounded-3xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-semibold text-rose-700">
+                                {{ session('error') }}
                             </div>
                         @endif
 

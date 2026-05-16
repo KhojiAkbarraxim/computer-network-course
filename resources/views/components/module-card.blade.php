@@ -78,16 +78,16 @@
     @if (! $compact)
         <div class="mt-6 flex flex-wrap items-center gap-3">
             <a
-                href="{{ route('lesson.sample') }}"
+                href="{{ route('lessons.index', ['module' => $module->id]) }}"
                 class="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-                Darsni ko'rish
+                Darslarni ko'rish
             </a>
             <a
-                href="{{ route('quiz.sample') }}"
+                href="{{ route('quizzes.index') }}"
                 class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-200 hover:text-brand-700"
             >
-                Nazorat namunasi
+                Nazoratlar
             </a>
         </div>
     @endif
